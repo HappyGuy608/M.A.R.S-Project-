@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "word-scanner",
+  "version": "1.0.0",
+  "description": "Scans webpage for specific words and highlights them",
+  "permissions": [
+    "activeTab"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Word Scanner"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ]
+}
