@@ -1,4 +1,4 @@
-let currentTargetWords = ["a", "and", "And", "yes", "no"]; // default words
+let currentTargetWords = ["a", "and", "yes", "no"]; // test words
 
 function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -17,40 +17,42 @@ function scanPage(words) {
   const cleanWords = words.filter(w => typeof w === 'string' && w.trim() !== '');
   if (!cleanWords || cleanWords.length === 0) return { success: true, count: 0 };
 
-  // Collect ALL nodes first before touching the DOM
+  // Combined regex with case-insensitive flag
+  const escapedWords = cleanWords.map(word => escapeRegExp(word)).join('|');
+  const regex = new RegExp(`\\b(${escapedWords})\\b`, 'gi');   // 'gi' = global + case-insensitive
+
+  let highlightCount = 0;
+
+  // Collect nodes first
   const nodes = [];
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
   let node;
   while (node = walker.nextNode()) {
-    if (['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'CODE', 'NOSCRIPT'].includes(node.parentElement?.tagName)) continue;
+    const tag = node.parentElement?.tagName;
+    if (['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'CODE', 'NOSCRIPT'].includes(tag)) continue;
     nodes.push(node);
   }
 
-  let highlightCount = 0;
+  // Process nodes
+  nodes.forEach(textNode => {
+    const text = textNode.textContent;
+    if (!regex.test(text)) return; // Quick skip for better performance
 
-  // Now process nodes separately
-  nodes.forEach(node => {
-    let text = node.textContent;
-    let modified = false;
-
-    cleanWords.forEach(word => {
-      const regex = new RegExp(`\\b${escapeRegExp(word)}\\b`, 'g');
-      text = text.replace(regex, match => {
-        modified = true;
-        highlightCount++;
-        return `<mark class="word-scanner-highlight" style="background-color: yellow; color: black; padding: 2px 4px; border-radius: 3px; font-weight: bold;">${match}</mark>`;
-      });
+    const newHTML = text.replace(regex, match => {
+      highlightCount++;
+      return `<mark class="word-scanner-highlight" style="background-color: yellow; color: black; padding: 2px 4px; border-radius: 3px; font-weight: bold;">${match}</mark>`;
     });
 
-    if (modified) {
+    if (newHTML !== text) {
       const span = document.createElement('span');
-      span.innerHTML = text;
-      node.parentNode.replaceChild(span, node);
+      span.innerHTML = newHTML;
+      textNode.parentNode.replaceChild(span, textNode);
     }
   });
 
   return { success: true, count: highlightCount };
 }
+
 // Listen for message from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "scanWithWords") {
@@ -60,5 +62,5 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Initial scan with default words when page loads
+// Initial scan
 scanPage(currentTargetWords);
