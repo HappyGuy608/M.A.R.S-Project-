@@ -1,4 +1,4 @@
-let currentTargetWords = ["a", "and", "yes", "no"]; // test words
+let currentTargetWords = ["a", "and", "yes", "no"]; // test words will replace with a data base
 
 function escapeRegExp(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -11,19 +11,77 @@ function clearHighlights() {
   });
 }
 
+// ==================== POPUP ====================
+function createDefinitionPopup(word) {
+  // Remove any existing popup
+  const existing = document.getElementById('word-scanner-popup');
+  if (existing) existing.remove();
+
+  const popup = document.createElement('div');
+  popup.id = 'word-scanner-popup';
+  popup.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border: 2px solid #333;
+    border-radius: 10px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    padding: 25px;
+    z-index: 2147483647;
+    min-width: 320px;
+    text-align: center;
+    font-family: Arial, sans-serif;
+  `;
+
+  popup.innerHTML = `
+    <h2 style="margin: 0 0 20px 0; color: #222;">${word}</h2>
+    <p style="margin: 20px 0; font-size: 17px; color: #444; line-height: 1.5;">
+      test definition
+    </p>
+    <button id="close-popup-btn" style="
+      padding: 10px 20px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    ">Close</button>
+  `;
+
+  document.body.appendChild(popup);
+
+  // Close button
+  document.getElementById('close-popup-btn').addEventListener('click', () => {
+    popup.remove();
+  });
+
+  // Click outside to close
+  setTimeout(() => {
+    document.addEventListener('click', function handler(e) {
+      if (!popup.contains(e.target)) {
+        popup.remove();
+        document.removeEventListener('click', handler);
+      }
+    });
+  }, 100);
+}
+
+// ==================== SCAN ====================
 function scanPage(words) {
   clearHighlights();
 
   const cleanWords = words.filter(w => typeof w === 'string' && w.trim() !== '');
   if (!cleanWords || cleanWords.length === 0) return { success: true, count: 0 };
 
-  // Combined regex with case-insensitive flag
   const escapedWords = cleanWords.map(word => escapeRegExp(word)).join('|');
-  const regex = new RegExp(`\\b(${escapedWords})\\b`, 'gi');   // 'gi' = global + case-insensitive
+  const regex = new RegExp(`\\b(${escapedWords})\\b`, 'gi');
 
   let highlightCount = 0;
 
-  // Collect nodes first
+  // Collect nodes
   const nodes = [];
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
   let node;
@@ -33,14 +91,14 @@ function scanPage(words) {
     nodes.push(node);
   }
 
-  // Process nodes
+  // Process and highlight
   nodes.forEach(textNode => {
     const text = textNode.textContent;
-    if (!regex.test(text)) return; // Quick skip for better performance
+    if (!regex.test(text)) return;
 
     const newHTML = text.replace(regex, match => {
       highlightCount++;
-      return `<mark class="word-scanner-highlight" style="background-color: yellow; color: black; padding: 2px 4px; border-radius: 3px; font-weight: bold;">${match}</mark>`;
+      return `<mark class="word-scanner-highlight" style="background-color: yellow; color: black; padding: 2px 4px; border-radius: 3px; font-weight: bold; cursor: pointer;">${match}</mark>`;
     });
 
     if (newHTML !== text) {
@@ -48,6 +106,14 @@ function scanPage(words) {
       span.innerHTML = newHTML;
       textNode.parentNode.replaceChild(span, textNode);
     }
+  });
+
+  // Add click listeners to highlighted words
+  document.querySelectorAll('.word-scanner-highlight').forEach(mark => {
+    mark.addEventListener('click', (e) => {
+      e.stopImmediatePropagation();
+      createDefinitionPopup(mark.textContent);
+    });
   });
 
   return { success: true, count: highlightCount };
@@ -62,5 +128,5 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Initial scan
+// Initial Scan 
 scanPage(currentTargetWords);
