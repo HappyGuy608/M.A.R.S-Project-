@@ -11,7 +11,37 @@ function clearHighlights() {
   });
 }
 
-// ==================== POPUP ====================
+// ==================== TOOLTIP (Hover) ====================
+function createTooltip(word, targetElement) {
+  // Remove any existing tooltip
+  const existing = document.getElementById('word-scanner-tooltip');
+  if (existing) existing.remove();
+
+  const tooltip = document.createElement('div');
+  tooltip.id = 'word-scanner-tooltip';
+  tooltip.style.cssText = `
+    position: absolute;
+    background: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    z-index: 2147483647;
+    pointer-events: none;
+    max-width: 280px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  `;
+
+  tooltip.textContent = "definitions test";
+  document.body.appendChild(tooltip);
+
+  // Position tooltip below the word
+  const rect = targetElement.getBoundingClientRect();
+  tooltip.style.top = `${rect.bottom + window.scrollY + 8}px`;
+  tooltip.style.left = `${rect.left + window.scrollX}px`;
+}
+
+// ==================== BIG POPUP (Click) ====================
 function createDefinitionPopup(word) {
   // Remove any existing popup
   const existing = document.getElementById('word-scanner-popup');
@@ -38,7 +68,7 @@ function createDefinitionPopup(word) {
   popup.innerHTML = `
     <h2 style="margin: 0 0 20px 0; color: #222;">${word}</h2>
     <p style="margin: 20px 0; font-size: 17px; color: #444; line-height: 1.5;">
-      test definition
+      definitions test
     </p>
     <button id="close-popup-btn" style="
       padding: 10px 20px;
@@ -69,7 +99,7 @@ function createDefinitionPopup(word) {
   }, 100);
 }
 
-// ==================== SCAN ====================
+// ==================== SCAN FUNCTION  ====================
 function scanPage(words) {
   clearHighlights();
 
@@ -81,7 +111,6 @@ function scanPage(words) {
 
   let highlightCount = 0;
 
-  // Collect nodes
   const nodes = [];
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
   let node;
@@ -91,7 +120,6 @@ function scanPage(words) {
     nodes.push(node);
   }
 
-  // Process and highlight
   nodes.forEach(textNode => {
     const text = textNode.textContent;
     if (!regex.test(text)) return;
@@ -108,8 +136,19 @@ function scanPage(words) {
     }
   });
 
-  // Add click listeners to highlighted words
+  // Add hover + click listeners
   document.querySelectorAll('.word-scanner-highlight').forEach(mark => {
+    // Hover → tooltip
+    mark.addEventListener('mouseenter', () => {
+      createTooltip(mark.textContent, mark);
+    });
+
+    mark.addEventListener('mouseleave', () => {
+      const tooltip = document.getElementById('word-scanner-tooltip');
+      if (tooltip) tooltip.remove();
+    });
+
+    // Click → big popup
     mark.addEventListener('click', (e) => {
       e.stopImmediatePropagation();
       createDefinitionPopup(mark.textContent);
