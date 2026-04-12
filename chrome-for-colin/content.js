@@ -32,7 +32,7 @@ function createTooltip(word, targetElement) {
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   `;
 
-  tooltip.textContent = "definitions test";
+  tooltip.textContent = "definitions placeholder";
   document.body.appendChild(tooltip);
 
   // Position tooltip below the word
@@ -68,7 +68,7 @@ function createDefinitionPopup(word) {
   popup.innerHTML = `
     <h2 style="margin: 0 0 20px 0; color: #222;">${word}</h2>
     <p style="margin: 20px 0; font-size: 17px; color: #444; line-height: 1.5;">
-      definitions test
+      definitions placeholder
     </p>
     <button id="close-popup-btn" style="
       padding: 10px 20px;
