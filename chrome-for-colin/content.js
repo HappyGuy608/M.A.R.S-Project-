@@ -13,7 +13,7 @@ function clearHighlights() {
 
 // ==================== TOOLTIP (Hover) ====================
 function createTooltip(word, targetElement) {
-  // Remove any existing tooltip
+  
   const existing = document.getElementById('word-scanner-tooltip');
   if (existing) existing.remove();
 
@@ -43,10 +43,9 @@ function createTooltip(word, targetElement) {
 
 // ==================== BIG POPUP (Click) ====================
 function createDefinitionPopup(word) {
-  // Remove any existing popup
+  
   const existing = document.getElementById('word-scanner-popup');
   if (existing) existing.remove();
-
   const popup = document.createElement('div');
   popup.id = 'word-scanner-popup';
   popup.style.cssText = `
@@ -64,7 +63,6 @@ function createDefinitionPopup(word) {
     text-align: center;
     font-family: Arial, sans-serif;
   `;
-
   popup.innerHTML = `
     <h2 style="margin: 0 0 20px 0; color: #222;">${word}</h2>
     <p style="margin: 20px 0; font-size: 17px; color: #444; line-height: 1.5;">
@@ -82,8 +80,6 @@ function createDefinitionPopup(word) {
   `;
 
   document.body.appendChild(popup);
-
-  // Close button
   document.getElementById('close-popup-btn').addEventListener('click', () => {
     popup.remove();
   });
@@ -136,9 +132,8 @@ function scanPage(words) {
     }
   });
 
-  // Add hover + click listeners
   document.querySelectorAll('.word-scanner-highlight').forEach(mark => {
-    // Hover → tooltip
+    // Hover 
     mark.addEventListener('mouseenter', () => {
       createTooltip(mark.textContent, mark);
     });
@@ -147,8 +142,6 @@ function scanPage(words) {
       const tooltip = document.getElementById('word-scanner-tooltip');
       if (tooltip) tooltip.remove();
     });
-
-    // Click → big popup
     mark.addEventListener('click', (e) => {
       e.stopImmediatePropagation();
       createDefinitionPopup(mark.textContent);
@@ -158,7 +151,6 @@ function scanPage(words) {
   return { success: true, count: highlightCount };
 }
 
-// Listen for message from popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "scanWithWords") {
     currentTargetWords = request.words;
@@ -167,5 +159,4 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Initial Scan 
 scanPage(currentTargetWords);
